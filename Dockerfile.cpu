@@ -91,6 +91,15 @@ RUN pip --no-cache-dir install --upgrade ipython && \
 		&& \
 	python -m ipykernel.kernelspec
 
+# Install OpenCV
+
+FROM continuumio/anaconda
+EXPOSE 5000
+
+ADD . /code-directory
+WORKDIR code-directory
+RUN conda install opencv
+
 
 # Install TensorFlow
 RUN pip --no-cache-dir install \
