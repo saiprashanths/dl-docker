@@ -5,7 +5,7 @@ MAINTAINER Sai Soundararaj <saip@outlook.com>
 ARG THEANO_VERSION=rel-0.8.2
 ARG TENSORFLOW_VERSION=0.12.1
 ARG TENSORFLOW_ARCH=gpu
-ARG KERAS_VERSION=1.2.0
+ARG KERAS_VERSION=2.0.5
 ARG LASAGNE_VERSION=v0.1
 ARG TORCH_VERSION=latest
 ARG CAFFE_VERSION=master
@@ -140,6 +140,9 @@ RUN pip install --upgrade tensorflow-gpu
 # Install specific html5lib so TensorBoard can run
 RUN pip --no-cache-dir install --upgrade html5lib==1.0b8
 
+# Include Keras neural net library for use with Theano and TensorFlow.
+RUN pip install --upgrade keras # force rebuild
+
 # Install dependencies for Caffe
 RUN apt-get update && apt-get install -y \
 		libboost-all-dev \
@@ -210,6 +213,7 @@ ENV LUA_CPATH='/root/torch/install/lib/?.so;'$LUA_CPATH
 
 # Install the latest versions of nn, cutorch, cunn, cuDNN bindings and iTorch
 RUN luarocks install nn && \
+    luarocks install torch && \
 	luarocks install cutorch && \
 	luarocks install cunn && \
     luarocks install loadcaffe && \
