@@ -172,7 +172,7 @@ RUN pip --no-cache-dir install git+git://github.com/Theano/Theano.git@${THEANO_V
 	echo "[global]\ndevice=cpu\nfloatX=float32\nmode=FAST_RUN \
 		\n[lib]\ncnmem=0.95 \
 		\n[nvcc]\nfastmath=True \
-		\n[blas]\nldflag = -L/usr/lib/openblas-base -lopenblas \
+		\n[blas]\nldflags = -L/usr/lib/ -lblas \
 		\n[DebugMode]\ncheck_finite=1" \
 	> /root/.theanorc
 
