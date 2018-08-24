@@ -5,7 +5,7 @@ MAINTAINER Sai Soundararaj <saip@outlook.com>
 ARG THEANO_VERSION=rel-0.8.2
 ARG TENSORFLOW_VERSION=0.12.1
 ARG TENSORFLOW_ARCH=gpu
-ARG KERAS_VERSION=1.2.0
+ARG KERAS_VERSION=2.0.5
 ARG LASAGNE_VERSION=v0.1
 ARG TORCH_VERSION=latest
 ARG CAFFE_VERSION=master
@@ -135,7 +135,13 @@ RUN pip --no-cache-dir install --upgrade ipython && \
 # Install TensorFlow
 RUN pip --no-cache-dir install \
 	https://storage.googleapis.com/tensorflow/linux/${TENSORFLOW_ARCH}/tensorflow_${TENSORFLOW_ARCH}-${TENSORFLOW_VERSION}-cp27-none-linux_x86_64.whl
+RUN pip install --upgrade tensorflow-gpu
 
+# Install specific html5lib so TensorBoard can run
+RUN pip --no-cache-dir install --upgrade html5lib==1.0b8
+
+# Include Keras neural net library for use with Theano and TensorFlow.
+RUN pip install --upgrade keras # force rebuild
 
 # Install dependencies for Caffe
 RUN apt-get update && apt-get install -y \
@@ -207,6 +213,7 @@ ENV LUA_CPATH='/root/torch/install/lib/?.so;'$LUA_CPATH
 
 # Install the latest versions of nn, cutorch, cunn, cuDNN bindings and iTorch
 RUN luarocks install nn && \
+    luarocks install torch && \
 	luarocks install cutorch && \
 	luarocks install cunn && \
     luarocks install loadcaffe && \
@@ -224,7 +231,7 @@ RUN git clone --depth 1 https://github.com/opencv/opencv.git /root/opencv && \
 	cd /root/opencv && \
 	mkdir build && \
 	cd build && \
-	cmake -DWITH_QT=ON -DWITH_OPENGL=ON -DFORCE_VTK=ON -DWITH_TBB=ON -DWITH_GDAL=ON -DWITH_XINE=ON -DBUILD_EXAMPLES=ON .. && \
+	cmake -DWITH_QT=ON -DWITH_OPENGL=ON -DCMAKE_LIBRARY_PATH=/usr/local/cuda/lib64/stubs/ -DFORCE_VTK=ON -DWITH_TBB=ON -DWITH_GDAL=ON -DWITH_XINE=ON -DBUILD_EXAMPLES=ON .. && \
 	make -j"$(nproc)"  && \
 	make install && \
 	ldconfig && \
