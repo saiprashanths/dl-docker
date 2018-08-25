@@ -10,6 +10,16 @@ ARG LASAGNE_VERSION=v0.1
 ARG TORCH_VERSION=latest
 ARG CAFFE_VERSION=master
 
+ARG PYTHON_BASEDEPS="build-essential python-pip"
+ARG PYTHON_BUILDDEPS="libbz2-dev \
+  libc6-dev \
+  libgdbm-dev \
+  libncursesw5-dev \
+  libreadline-gplv2-dev \
+  libsqlite3-dev \
+  libssl-dev \
+  tk-dev"
+
 #RUN echo -e "\n**********************\nNVIDIA Driver Version\n**********************\n" && \
 #	cat /proc/driver/nvidia/version && \
 #	echo -e "\n**********************\nCUDA Version\n**********************\n" && \
@@ -87,6 +97,24 @@ RUN apt-get update && apt-get install -y \
 # Link BLAS library to use OpenBLAS using the alternatives mechanism (https://www.scipy.org/scipylib/building/linux.html#debian-ubuntu)
 	update-alternatives --set libblas.so.3 /usr/lib/openblas-base/libblas.so.3
 
+
+ARG PYTHON_TARFILE="Python-2.7.9.tgz"
+ARG PYTHON_TARHOST="https://www.python.org/ftp/python/2.7.9"
+ARG PYTHON_SRCDIR="Python-2.7.9"
+
+RUN apt-get update
+RUN apt-get install -y ${PYTHON_BASEDEPS} ${PYTHON_BUILDDEPS}
+
+RUN wget "${PYTHON_TARHOST}/${PYTHON_TARFILE}"
+RUN tar xvf ${PYTHON_TARFILE}
+
+RUN cd ${PYTHON_SRCDIR} && \
+  ./configure && \
+  make && \
+  make install
+
+
+
 # Install pip
 RUN curl -O https://bootstrap.pypa.io/get-pip.py && \
 	python get-pip.py && \
@@ -109,28 +137,41 @@ RUN apt-get update && apt-get install -y \
 		python-matplotlib \
 		python-pandas \
 		python-sklearn \
-		python-sympy \
-		&& \
+		python-sympy 
+RUN apt-get update && apt-get install -y \
+  libffi-dev libssl-dev && \
 	apt-get clean && \
 	apt-get autoremove && \
 	rm -rf /var/lib/apt/lists/*
 
 # Install other useful Python packages using pip
-RUN pip --no-cache-dir install --upgrade ipython && \
-	pip --no-cache-dir install \
-		Cython \
-		ipykernel \
-		jupyter \
-		path.py \
-		Pillow \
-		pygments \
-		six \
-		sphinx \
-		wheel \
-		zmq \
-		&& \
-	python -m ipykernel.kernelspec
+RUN pip install --upgrade pip
+RUN pip install pyopenssl ndg-httpsclient pyasn1
+RUN pip --no-cache-dir install --upgrade ipython
+RUN pip --no-cache-dir install    Cython
+RUN pip --no-cache-dir install		path.py
+RUN pip --no-cache-dir install	  Pillow
+RUN pip --no-cache-dir install	  pygments 
+RUN pip --no-cache-dir install    six
+RUN pip --no-cache-dir install    sphinx
+RUN pip --no-cache-dir install    wheel
+RUN pip --no-cache-dir install    zmq
 
+#TODO move UP
+RUN wget https://www.openssl.org/source/openssl-1.0.2n.tar.gz
+RUN tar -xvzf openssl-1.0.2n.tar.gz
+RUN cd openssl-1.0.2n && ./config && sudo make && sudo make install
+RUN ln -sf /usr/local/ssl/bin/openssl `which openssl`
+
+RUN sleep 1 
+RUN openssl version -v
+
+RUN pip --no-cache-dir install		ipykernel
+RUN pip --no-cache-dir install		jupyter
+RUN	python -m ipykernel.kernelspec
+
+#TODO take out if ipykernel gets installed
+#RUN false
 
 # Install TensorFlow
 RUN pip --no-cache-dir install \
@@ -154,22 +195,25 @@ RUN apt-get update && apt-get install -y \
 	apt-get autoremove && \
 	rm -rf /var/lib/apt/lists/*
 
-# Install Caffe
-RUN git clone -b ${CAFFE_VERSION} --depth 1 https://github.com/BVLC/caffe.git /root/caffe && \
-	cd /root/caffe && \
-	cat python/requirements.txt | xargs -n1 pip install && \
-	mkdir build && cd build && \
-	cmake -DUSE_CUDNN=1 -DBLAS=Open .. && \
-	make -j"$(nproc)" all && \
-	make install
-
-# Set up Caffe environment variables
-ENV CAFFE_ROOT=/root/caffe
-ENV PYCAFFE_ROOT=$CAFFE_ROOT/python
-ENV PYTHONPATH=$PYCAFFE_ROOT:$PYTHONPATH \
-	PATH=$CAFFE_ROOT/build/tools:$PYCAFFE_ROOT:$PATH
-
-RUN echo "$CAFFE_ROOT/build/lib" >> /etc/ld.so.conf.d/caffe.conf && ldconfig
+### Install Caffe
+#RUN git clone -b ${CAFFE_VERSION} --depth 1 https://github.com/BVLC/caffe.git /root/caffe
+#RUN	cd /root/caffe && \
+#  cat python/requirements.txt | xargs -n1  -L 1 pip install
+#RUN pip install -r /root/caffe/python/requirements.txt
+#RUN cd /root/caffe && \
+#  mkdir build && cd build && \
+#	cmake -DUSE_CUDNN=1 -DBLAS=Open .. && \
+#	make -j"$(nproc)" all
+#RUN cd /root/caffe/build && \
+#  make install
+#
+## Set up Caffe environment variables
+#ENV CAFFE_ROOT=/root/caffe
+#ENV PYCAFFE_ROOT=$CAFFE_ROOT/python
+#ENV PYTHONPATH=$PYCAFFE_ROOT:$PYTHONPATH \
+#	PATH=$CAFFE_ROOT/build/tools:$PYCAFFE_ROOT:$PATH
+#
+#RUN echo "$CAFFE_ROOT/build/lib" >> /etc/ld.so.conf.d/caffe.conf && ldconfig
 
 
 # Install Theano and set up Theano config (.theanorc) for CUDA and OpenBLAS
@@ -219,16 +263,16 @@ RUN luarocks install nn && \
 	cd iTorch && \
 	luarocks make
 
-# Install OpenCV
-RUN git clone --depth 1 https://github.com/opencv/opencv.git /root/opencv && \
-	cd /root/opencv && \
-	mkdir build && \
-	cd build && \
-	cmake -DWITH_QT=ON -DWITH_OPENGL=ON -DFORCE_VTK=ON -DWITH_TBB=ON -DWITH_GDAL=ON -DWITH_XINE=ON -DBUILD_EXAMPLES=ON .. && \
-	make -j"$(nproc)"  && \
-	make install && \
-	ldconfig && \
-	echo 'ln /dev/null /dev/raw1394' >> ~/.bashrc
+#TODO# Install OpenCV
+#RUN git clone --depth 1 https://github.com/opencv/opencv.git /root/opencv && \
+#	cd /root/opencv && \
+#	mkdir build && \
+#	cd build && \
+#	cmake -DWITH_QT=ON -DWITH_OPENGL=ON -DFORCE_VTK=ON -DWITH_TBB=ON -DWITH_GDAL=ON -DWITH_XINE=ON -DBUILD_EXAMPLES=ON .. && \
+#	make -j"$(nproc)"  && \
+#	make install && \
+#	ldconfig && \
+#	echo 'ln /dev/null /dev/raw1394' >> ~/.bashrc
 
 # Set up notebook config
 COPY jupyter_notebook_config.py /root/.jupyter/
