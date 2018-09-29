@@ -136,6 +136,8 @@ RUN pip --no-cache-dir install --upgrade ipython && \
 RUN pip --no-cache-dir install \
 	https://storage.googleapis.com/tensorflow/linux/${TENSORFLOW_ARCH}/tensorflow_${TENSORFLOW_ARCH}-${TENSORFLOW_VERSION}-cp27-none-linux_x86_64.whl
 
+# Install specific html5lib so TensorBoard can run
+RUN pip --no-cache-dir install --upgrade html5lib==1.0b8
 
 # Install dependencies for Caffe
 RUN apt-get update && apt-get install -y \
