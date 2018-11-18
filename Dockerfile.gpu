@@ -142,8 +142,8 @@ RUN apt-get update && apt-get install -y \
 	rm -rf /var/lib/apt/lists/*
 
 
-RUN pip install matplotlib
-RUN pip install ipython
+RUN pip install matplotlib \
+                ipython
 
 # Install other useful Python packages using pip
 RUN pip --no-cache-dir install --upgrade ipython && \
