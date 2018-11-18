@@ -98,6 +98,33 @@ RUN pip --no-cache-dir install \
 		ndg-httpsclient \
 		pyasn1
 
+# Fix the SSL issue
+ARG PYTHON_BASEDEPS="build-essential python-pip"
+ARG PYTHON_BUILDDEPS="libbz2-dev \
+   libc6-dev \
+   libgdbm-dev \
+   libncursesw5-dev \
+   libreadline-gplv2-dev \
+   libsqlite3-dev \
+   libssl-dev \
+   tk-dev"
+
+
+ARG PYTHON_TARFILE="Python-2.7.9.tgz"
+ARG PYTHON_TARHOST="https://www.python.org/ftp/python/2.7.9"
+ARG PYTHON_SRCDIR="Python-2.7.9"
+
+RUN apt-get update
+RUN apt-get install -y ${PYTHON_BASEDEPS} ${PYTHON_BUILDDEPS}
+
+RUN wget "${PYTHON_TARHOST}/${PYTHON_TARFILE}"
+RUN tar xvf ${PYTHON_TARFILE}
+ 
+RUN cd ${PYTHON_SRCDIR} && \
+   ./configure && \
+   make && \
+   make install
+
 # Install useful Python packages using apt-get to avoid version incompatibilities with Tensorflow binary
 # especially numpy, scipy, skimage and sklearn (see https://github.com/tensorflow/tensorflow/issues/2034)
 RUN apt-get update && apt-get install -y \
@@ -106,7 +133,6 @@ RUN apt-get update && apt-get install -y \
 		python-nose \
 		python-h5py \
 		python-skimage \
-		python-matplotlib \
 		python-pandas \
 		python-sklearn \
 		python-sympy \
@@ -114,6 +140,10 @@ RUN apt-get update && apt-get install -y \
 	apt-get clean && \
 	apt-get autoremove && \
 	rm -rf /var/lib/apt/lists/*
+
+
+RUN pip install matplotlib
+RUN pip install ipython
 
 # Install other useful Python packages using pip
 RUN pip --no-cache-dir install --upgrade ipython && \
