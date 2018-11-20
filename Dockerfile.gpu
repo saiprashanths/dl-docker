@@ -183,7 +183,9 @@ RUN apt-get update && apt-get install -y \
 	rm -rf /var/lib/apt/lists/*
 
 # Install Caffe
-RUN git clone -b ${CAFFE_VERSION} --depth 1 https://github.com/BVLC/caffe.git /root/caffe && \
+# Use Video friendly Caffe instead.
+# The original version: https://github.com/BVLC/caffe.git
+RUN git clone -b ${CAFFE_VERSION} --depth 1 https://github.com/huangyz0918/video-caffe-fixed.git /root/caffe && \
 	cd /root/caffe && \
 	cat python/requirements.txt | xargs -n1 pip install && \
 	mkdir build && cd build && \
