@@ -101,7 +101,7 @@ RUN apt-get update && apt-get install -y \
 		doxygen \
 		&& \
 	apt-get clean && \
-	apt-get autoremove && \
+	apt-get -y autoremove && \
 	rm -rf /var/lib/apt/lists/* && \
 # Link BLAS library to use OpenBLAS using the alternatives mechanism (https://www.scipy.org/scipylib/building/linux.html#debian-ubuntu)
 	update-alternatives --set libblas.so.3 /usr/lib/openblas-base/libblas.so.3
@@ -131,10 +131,11 @@ RUN apt-get update && apt-get install -y \
 		python-sympy \
 		&& \
 	apt-get clean && \
-	apt-get autoremove && \
+	apt-get -y autoremove && \
 	rm -rf /var/lib/apt/lists/*
 
 # Install other useful Python packages using pip
+RUN apt-get -y remove ipython
 RUN pip --no-cache-dir install --upgrade ipython && \
 	pip --no-cache-dir install \
 		Cython \
@@ -170,7 +171,7 @@ RUN apt-get update && apt-get install -y \
 		protobuf-compiler \
 		&& \
 	apt-get clean && \
-	apt-get autoremove && \
+	apt-get -y autoremove && \
 	rm -rf /var/lib/apt/lists/*
 
 # Install Caffe
